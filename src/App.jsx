@@ -89,36 +89,32 @@ export default function App() {
   for(let y=BU_YIL-3;y<=BU_YIL+1;y++) yilSecenekleri.push(y);
 
  useEffect(() => {
-  async function buluttanGetir() {
-    // 1. Supabase'den seçilen aya ait verileri çek
-    const { data, error } = await supabase
-      .from('kayitlar')
-      .select('*')
-      .eq('donem', key);
+    async function verileriYukle() {
+      // 1. Önce buluttan (Supabase) verileri çekmeyi dene
+      const { data, error } = await supabase
+        .from('kayitlar')
+        .select('*')
+        .eq('donem', key);
 
-    if (error) {
-      console.error("Veri çekme hatası:", error);
-    } else if (data && data.length > 0) {
-      // 2. Gelen veriyi uygulamanın anlayacağı formata çevir
-      const formatliVeri = temsilcilikler.map(t => {
-        const kayıt = data.find(d => d.temsilcilik === t.ad);
-        return {
-          ...t,
-          kutular: kayıt ? kayıt.kutular : "",
-          tutar: kayıt ? kayıt.tutar : ""
-        };
-      });
-      setForm(formatliVeri);
-    } else {
-      // 3. Veri yoksa formu sıfırla
-      setForm(temsilcilikler.map(t => ({ ...t, kutular: "", tutar: "" })));
-      setNot("");
+      if (!error && data && data.length > 0) {
+        // Bulutta veri varsa, form ekranını bu verilerle doldur
+        const yeniForm = temsilcilikler.map(t => {
+          const bulutKaydi = data.find(d => d.temsilcilik === t.ad);
+          return {
+            ...t,
+            kutular: bulutKaydi ? bulutKaydi.kutular : "",
+            tutar: bulutKaydi ? bulutKaydi.tutar : ""
+          };
+        });
+        setForm(yeniForm);
+      } else {
+        // 2. Bulutta veri yoksa veya hata varsa, boş form göster
+        setForm(temsilcilikler.map(t => ({ ...t, kutular: "", tutar: "" })));
+      }
     }
-  }
 
-  buluttanGetir();
-}, [key, temsilcilikler]); // Ay veya yıl değiştiğinde tekrar çalışır
-
+    verileriYukle();
+  }, [key]); // Dönem (ay/yıl) değiştiğinde verileri tazele
   function goster(txt){setMesaj(txt);setTimeout(()=>setMesaj(""),2500);}
 
 async function kaydet() {
