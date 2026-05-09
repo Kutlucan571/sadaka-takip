@@ -89,32 +89,38 @@ export default function App() {
   for(let y=BU_YIL-3;y<=BU_YIL+1;y++) yilSecenekleri.push(y);
 
  useEffect(() => {
-    async function verileriYukle() {
-      // 1. Önce buluttan (Supabase) verileri çekmeyi dene
+  async function verileriYukle() {
+    try {
       const { data, error } = await supabase
-        .from('kayitlar')
+        .from('kayitlar') // Tablo isminin doğruluğundan emin ol
         .select('*')
         .eq('donem', key);
 
-      if (!error && data && data.length > 0) {
-        // Bulutta veri varsa, form ekranını bu verilerle doldur
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Veri varsa formu doldur
         const yeniForm = temsilcilikler.map(t => {
-          const bulutKaydi = data.find(d => d.temsilcilik === t.ad);
-          return {
-            ...t,
-            kutular: bulutKaydi ? bulutKaydi.kutular : "",
-            tutar: bulutKaydi ? bulutKaydi.tutar : ""
-          };
+          const d = data.find(item => item.temsilcilik === t.ad);
+          return d ? { ...t, kutular: d.kutular, tutar: d.tutar } : { ...t, kutular: "", tutar: "" };
         });
         setForm(yeniForm);
       } else {
-        // 2. Bulutta veri yoksa veya hata varsa, boş form göster
+        // Veri yoksa boş form göster
         setForm(temsilcilikler.map(t => ({ ...t, kutular: "", tutar: "" })));
       }
+    } catch (err) {
+      console.error("Bağlantı Hatası:", err.message);
+      // Hata olsa bile listeyi göster ki sayfa boş kalmasın
+      setForm(temsilcilikler.map(t => ({ ...t, kutular: "", tutar: "" })));
     }
+  }
 
+  if (temsilcilikler && temsilcilikler.length > 0) {
     verileriYukle();
-  }, [key]); // Dönem (ay/yıl) değiştiğinde verileri tazele
+  }
+}, [key, temsilcilikler]);
+
   function goster(txt){setMesaj(txt);setTimeout(()=>setMesaj(""),2500);}
 
 async function kaydet() {
