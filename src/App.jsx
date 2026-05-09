@@ -88,16 +88,36 @@ export default function App() {
   const yilSecenekleri = [];
   for(let y=BU_YIL-3;y<=BU_YIL+1;y++) yilSecenekleri.push(y);
 
-  useEffect(() => {
-    const mevcut = veriler[key];
-    if(mevcut) {
-      setForm(mevcut.kayitlar.map((k,i)=>({...k,...temsilcilikler[i]})));
-      setNot(mevcut.not||"");
+ useEffect(() => {
+  async function buluttanGetir() {
+    // 1. Supabase'den seçilen aya ait verileri çek
+    const { data, error } = await supabase
+      .from('kayitlar')
+      .select('*')
+      .eq('donem', key);
+
+    if (error) {
+      console.error("Veri çekme hatası:", error);
+    } else if (data && data.length > 0) {
+      // 2. Gelen veriyi uygulamanın anlayacağı formata çevir
+      const formatliVeri = temsilcilikler.map(t => {
+        const kayıt = data.find(d => d.temsilcilik === t.ad);
+        return {
+          ...t,
+          kutular: kayıt ? kayıt.kutular : "",
+          tutar: kayıt ? kayıt.tutar : ""
+        };
+      });
+      setForm(formatliVeri);
     } else {
-      setForm(temsilcilikler.map(t=>({...t,kutular:"",tutar:""})));
+      // 3. Veri yoksa formu sıfırla
+      setForm(temsilcilikler.map(t => ({ ...t, kutular: "", tutar: "" })));
       setNot("");
     }
-  }, [key]);
+  }
+
+  buluttanGetir();
+}, [key, temsilcilikler]); // Ay veya yıl değiştiğinde tekrar çalışır
 
   function goster(txt){setMesaj(txt);setTimeout(()=>setMesaj(""),2500);}
 
