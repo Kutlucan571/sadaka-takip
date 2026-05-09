@@ -88,38 +88,16 @@ export default function App() {
   const yilSecenekleri = [];
   for(let y=BU_YIL-3;y<=BU_YIL+1;y++) yilSecenekleri.push(y);
 
- useEffect(() => {
-  async function verileriYukle() {
-    try {
-      const { data, error } = await supabase
-        .from('kayitlar') // Tablo isminin doğruluğundan emin ol
-        .select('*')
-        .eq('donem', key);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        // Veri varsa formu doldur
-        const yeniForm = temsilcilikler.map(t => {
-          const d = data.find(item => item.temsilcilik === t.ad);
-          return d ? { ...t, kutular: d.kutular, tutar: d.tutar } : { ...t, kutular: "", tutar: "" };
-        });
-        setForm(yeniForm);
-      } else {
-        // Veri yoksa boş form göster
-        setForm(temsilcilikler.map(t => ({ ...t, kutular: "", tutar: "" })));
-      }
-    } catch (err) {
-      console.error("Bağlantı Hatası:", err.message);
-      // Hata olsa bile listeyi göster ki sayfa boş kalmasın
-      setForm(temsilcilikler.map(t => ({ ...t, kutular: "", tutar: "" })));
+  useEffect(() => {
+    const mevcut = veriler[key];
+    if(mevcut) {
+      setForm(mevcut.kayitlar.map((k,i)=>({...k,...temsilcilikler[i]})));
+      setNot(mevcut.not||"");
+    } else {
+      setForm(temsilcilikler.map(t=>({...t,kutular:"",tutar:""})));
+      setNot("");
     }
-  }
-
-  if (temsilcilikler && temsilcilikler.length > 0) {
-    verileriYukle();
-  }
-}, [key, temsilcilikler]);
+  }, [key]);
 
   function goster(txt){setMesaj(txt);setTimeout(()=>setMesaj(""),2500);}
 
