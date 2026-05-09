@@ -1,0 +1,23 @@
+/* Genel yazı rengini ve netliğini ayarla */
+:root {
+  color: #1a1a1a;
+  background-color: #f8fafc;
+}
+
+/* Tablo içindeki isimlerin ve rakamların silikleşmesini engelle */
+td, th, span, p, div {
+  color: #1a1a1a !important; /* Yazıları simsiyah/koyu gri yapar */
+}
+
+/* Veri girerken kutuların içindeki yazıları cam gibi yap */
+input {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 500;
+}
+
+/* Özellikle o okunmayan gri isimleri (Nizam, Gençlik vb.) netleştir */
+.text-gray-500, .text-slate-500 {
+  color: #334155 !important;
+}
