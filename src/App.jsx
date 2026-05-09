@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "./supabaseClient";
 
 const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 
@@ -100,11 +101,40 @@ export default function App() {
 
   function goster(txt){setMesaj(txt);setTimeout(()=>setMesaj(""),2500);}
 
-  function kaydet() {
-    const yeni={...veriler,[key]:{kayitlar:form.map((k,i)=>({...k,...temsilcilikler[i]})),not,tarih:new Date().toISOString()}};
-    setVeriler(yeni);saveData(yeni);goster("✓ Kaydedildi");
-  }
+async function kaydet() {
+    // 1. Veriyi Supabase formatına hazırla
+    const gonderilecekVeri = form.map((k) => ({
+      donem: key,
+      temsilcilik: k.ad,
+      cinsiyet: k.cinsiyet,
+      kutular: Number(k.kutular) || 0,
+      tutar: Number(k.tutar) || 0
+    })).filter(k => k.kutular > 0 || k.tutar > 0);
 
+    if (gonderilecekVeri.length === 0) {
+      goster("⚠️ Kaydedilecek veri yok");
+      return;
+    }
+
+    // 2. Önce bu aya ait eski kayıtları temizle (Çift kayıt olmasın)
+    await supabase.from('kayitlar').delete().eq('donem', key);
+
+    // 3. Yeni verileri Supabase'e gönder
+    const { error } = await supabase
+      .from('kayitlar')
+      .insert(gonderilecekVeri);
+
+    if (error) {
+      console.error(error);
+      goster("❌ Hata: " + error.message);
+    } else {
+      // 4. Local'i de güncel tut (Hız için)
+      const yeni = { ...veriler, [key]: { kayitlar: form, not, tarih: new Date().toISOString() } };
+      setVeriler(yeni);
+      saveData(yeni);
+      goster("🚀 Buluta Kaydedildi!");
+    }}
+  
   function tKaydet() {
     saveTemsilcilikler(temsilcilikler);
     setDuzenle(false);
@@ -176,7 +206,7 @@ export default function App() {
     gbtn:(a,c)=>({padding:"6px 14px",borderRadius:7,border:`1px solid ${a?c:"#cbd5e1"}`,cursor:"pointer",fontSize:12,fontWeight:700,background:a?c:"#ffffff",color:a?"#ffffff":c,transition:"all .15s"}),
     bdg:(c)=>({display:"inline-block",background:c+"15",color:c,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700,border:`1px solid ${c}30`}),
   };
-    
+
   function GrupTablo({cinsiyet}) {
     const liste = getSirali(cinsiyet);
     const renk = cinsiyet==="E"?ERKEK_RENK:HANIM_RENK;
@@ -559,9 +589,17 @@ export default function App() {
             <div style={{fontSize:11,color:"#334155"}}>Kayıtlı dönem: {kayitliAylar.length} · Tarayıcı localStorage'a kaydedilir</div>
           </div>
         </>}
-      </main>
+</main>
 
-      {mesaj && <div style={S.flt}>{mesaj}</div>}
+{mesaj && (
+        <div style={{
+          ...S.flt,
+          background: mesaj.includes("❌") || mesaj.includes("⚠️") ? "#ef4444" : "#10b981",
+          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.2)"
+        }}>
+          {mesaj}
+        </div>
+      )}
     </div>
   );
 }
